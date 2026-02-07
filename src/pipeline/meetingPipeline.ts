@@ -1,7 +1,7 @@
 import { summarizeMeeting } from "../knowledge/summarizer.js";
 import { addDocument } from "../knowledge/vectorStore.js";
 import { saveMeeting } from "./meetingStore.js";
-import type { MeetingRecord, MeetingSummary } from "../granola/types.js";
+import type { MeetingRecord, MeetingSummary, RecordSource } from "../granola/types.js";
 
 // Parse "Name <email>" format from participants list
 function parseParticipant(p: string): { name: string; email: string } {
@@ -56,6 +56,7 @@ interface MeetingInput {
   id: string;
   title: string;
   date: string;
+  source?: RecordSource;
   rawNotes: string;
   transcript: string;
   participants?: string[];
@@ -100,6 +101,7 @@ export async function processMeeting(input: MeetingInput): Promise<MeetingRecord
     id: input.id,
     title: input.title,
     date: input.date,
+    source: input.source || "granola",
     participants: input.participants || [],
     rawNotes: input.rawNotes,
     transcript: input.transcript,

@@ -74,6 +74,7 @@ export async function summarizeThread(
     id: docId,
     title: `Slack Thread: #${channelName}`,
     date: threadDate,
+    source: "slack_thread",
     rawNotes: notes,
     transcript,
     participants,

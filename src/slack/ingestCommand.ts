@@ -58,6 +58,7 @@ export function registerIngestCommand(): void {
         id,
         title,
         date: new Date().toISOString().split("T")[0],
+        source: "manual",
         rawNotes: notes,
         transcript: "",
       });

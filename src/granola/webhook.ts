@@ -69,6 +69,7 @@ granolaWebhookRouter.post("/granola", async (req, res) => {
       id,
       title: title || "Untitled Meeting",
       date: timestamp || new Date().toISOString(),
+      source: "granola",
       rawNotes,
       transcript,
       participants,

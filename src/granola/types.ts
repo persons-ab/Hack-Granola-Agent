@@ -18,10 +18,13 @@ export interface TranscriptEntry {
   confidence?: number;
 }
 
+export type RecordSource = "granola" | "slack_thread" | "manual" | "google_meet" | "zoom";
+
 export interface MeetingRecord {
   id: string;
   title: string;
   date: string;
+  source: RecordSource;
   participants: string[];
   rawNotes: string;
   transcript: string;

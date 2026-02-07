@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import { config } from "./config.js";
 import { granolaWebhookRouter } from "./granola/webhook.js";
 import { getMeetingRecord, listAllMeetings, deleteMeeting } from "./pipeline/meetingStore.js";
@@ -7,6 +8,7 @@ import { query as vectorQuery, listDocuments, deleteDocument as deleteVectorDoc 
 export const app = express();
 
 app.use(express.json());
+app.use("/public", express.static(path.resolve("public")));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "meeting-knowledge-system" });
@@ -99,7 +101,7 @@ function landingHTML(): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dr. Evil — Meeting Intelligence Agent</title>
+<title>Evil Corp — Meeting Intelligence Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -165,13 +167,13 @@ function landingHTML(): string {
     letter-spacing: -0.02em;
   }
   .logo-icon {
-    width: 32px; height: 32px;
-    background: var(--accent);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+  .logo-icon img {
+    width: 100%; height: 100%;
+    object-fit: cover;
   }
   .nav-links { display: flex; gap: 8px; }
   .nav-link {
@@ -504,8 +506,8 @@ function landingHTML(): string {
 <div class="container">
   <nav>
     <div class="logo">
-      <div class="logo-icon">&#128520;</div>
-      Dr. Evil
+      <div class="logo-icon"><img src="/public/logo.png" alt="Dr. Evil"></div>
+      Evil Corp
     </div>
     <div class="nav-links">
       <a href="/dashboard" class="nav-link">Dashboard</a>
@@ -551,7 +553,7 @@ function landingHTML(): string {
       <div class="feature">
         <div class="feature-icon fi-red">&#9889;</div>
         <h3>Auto-Summarization</h3>
-        <p>Meeting notes from Granola are processed through GPT, extracting key decisions, action items, and discussion points.</p>
+        <p>Meeting notes from Granola are processed through an LLM, extracting key decisions, action items, and discussion points.</p>
       </div>
       <div class="feature">
         <div class="feature-icon fi-blue">&#128269;</div>
@@ -593,7 +595,7 @@ function landingHTML(): string {
       <div class="flow-step">
         <div class="flow-num">2</div>
         <h4>Summarize</h4>
-        <p>GPT extracts decisions, action items, discussion points, and assignees</p>
+        <p>LLM extracts decisions, action items, discussion points, and assignees</p>
       </div>
       <div class="flow-step">
         <div class="flow-num">3</div>
@@ -634,7 +636,7 @@ function landingHTML(): string {
     <div class="tech-grid">
       <span class="tech-tag">TypeScript</span>
       <span class="tech-tag">Node.js</span>
-      <span class="tech-tag">OpenAI GPT-5.2</span>
+      <span class="tech-tag">LLM</span>
       <span class="tech-tag">Vectra</span>
       <span class="tech-tag">Slack Bolt</span>
       <span class="tech-tag">Linear SDK</span>

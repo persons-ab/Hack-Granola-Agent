@@ -82,12 +82,15 @@ export const bugHandler: ActionHandler = {
 
       // Announce auto-fix attempt — ref appended structurally, not by AI
       const ref = issueItem ? fmtRef(issueItem) : "";
+      console.log("[bug] Generating character line for working message...");
       const workingMsg = await characterLine(`Starting work on a bug fix: "${item.task}". Announce you're going to fix it and will send a PR when done. Do NOT invent any ticket numbers.`);
+      console.log("[bug] Character line:", workingMsg);
       await ctx.client.chat.postMessage({
         channel: ctx.channel,
         thread_ts: ctx.threadTs,
         text: ref ? `${workingMsg}\n${ref}` : workingMsg,
       });
+      console.log("[bug] Working message posted to Slack");
 
       const fileList = await getRepoFileList();
       const relevantPaths = await pickRelevantFiles(fileList, item.task);
@@ -123,12 +126,15 @@ export const bugHandler: ActionHandler = {
         files: fix.files,
       });
 
+      console.log("[bug] Generating character line for PR-done message...");
       const doneMsg = await characterLine(`The fix PR is done for bug: "${item.task}". Announce the scheme is complete. Do NOT invent any ticket numbers.`);
+      console.log("[bug] Character line:", doneMsg);
       await ctx.client.chat.postMessage({
         channel: ctx.channel,
         thread_ts: ctx.threadTs,
-        text: `${doneMsg}\n${fmtRef(prItem)} ${prItem.title}`,
+        text: `OPERATION SUCCESS :onemilliondollars:\n${doneMsg}\n${fmtRef(prItem)} ${prItem.title}`,
       });
+      console.log("[bug] PR-done message posted to Slack");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "unknown error";
       console.warn(`[bug] Auto-fix PR failed: ${msg}`);

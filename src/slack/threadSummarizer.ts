@@ -1,6 +1,5 @@
 import type { WebClient } from "@slack/web-api";
 import { processMeeting } from "../pipeline/meetingPipeline.js";
-import type { MeetingSummary } from "../granola/types.js";
 
 export async function summarizeThread(
   client: WebClient,

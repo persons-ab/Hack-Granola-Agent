@@ -1,10 +1,7 @@
 import type { WebClient } from "@slack/web-api";
-import OpenAI from "openai";
-import { config } from "../config.js";
+import { aiJSON } from "../ai/models.js";
 import { getProvider, getProvidersByType } from "./registry.js";
 import type { CreatedItem, CreateItemParams } from "./types.js";
-
-const openai = new OpenAI({ apiKey: config.openai.apiKey });
 
 interface ExtractedAction {
   title: string;
@@ -19,22 +16,13 @@ interface ResolvedAssignee {
 }
 
 async function extractActionFields(text: string): Promise<ExtractedAction> {
-  const resp = await openai.chat.completions.create({
-    model: "gpt-4o",
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `Extract a work item from the user text. Return JSON:
+  const parsed = await aiJSON<ExtractedAction>(
+    `Extract a work item from the user text. Return JSON:
 {"title": "short actionable title (start with verb)", "description": "detailed description", "assigneeName": "person name or null", "type": "issue"}
 Type must be one of: "issue", "pr", "prd", "bug", "task".`,
-      },
-      { role: "user", content: text },
-    ],
-  });
+    text,
+  );
 
-  const raw = resp.choices[0]?.message?.content || "{}";
-  const parsed = JSON.parse(raw);
   return {
     title: parsed.title || "Untitled",
     description: parsed.description || "",

@@ -1,26 +1,7 @@
-import OpenAI from "openai";
-import { config } from "../config.js";
 import type { MeetingSummary } from "../granola/types.js";
+import { aiJSON } from "../ai/models.js";
 
-const openai = new OpenAI({ apiKey: config.openai.apiKey });
-
-export async function summarizeMeeting(
-  notes: string,
-  transcript?: string
-): Promise<MeetingSummary> {
-  const content = [
-    "## Meeting Notes",
-    notes,
-    transcript ? "\n## Transcript\n" + transcript : "",
-  ].join("\n");
-
-  const resp = await openai.chat.completions.create({
-    model: "gpt-4o",
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `You are a meeting notes assistant. Extract structured information from meeting notes and transcripts.
+const INSTRUCTIONS = `You are a meeting notes assistant. Extract structured information from meeting notes and transcripts.
 Return JSON with this exact shape:
 {
   "summary": "2-3 sentence summary of the meeting",
@@ -48,14 +29,19 @@ Priority rules:
 - "medium": normal work items (default)
 - "low": nice-to-have, exploratory, or explicitly deprioritized
 
-Be concise. Extract ALL action items — including unassigned ones.`,
-      },
-      { role: "user", content },
-    ],
-  });
+Be concise. Extract ALL action items — including unassigned ones.`;
 
-  const raw = resp.choices[0]?.message?.content || "{}";
-  const parsed = JSON.parse(raw);
+export async function summarizeMeeting(
+  notes: string,
+  transcript?: string
+): Promise<MeetingSummary> {
+  const input = [
+    "## Meeting Notes",
+    notes,
+    transcript ? "\n## Transcript\n" + transcript : "",
+  ].join("\n");
+
+  const parsed = await aiJSON<MeetingSummary>(INSTRUCTIONS, input);
 
   return {
     summary: parsed.summary || "",

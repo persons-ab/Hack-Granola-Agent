@@ -2,6 +2,7 @@ import type { MeetingRecord, MeetingSummary } from "../granola/types.js";
 import { getSlackApp } from "./app.js";
 import { config } from "../config.js";
 import { orchestrate } from "../actor/orchestrator.js";
+import { fmtMeetingSummary } from "./format.js";
 
 export async function slackPostProcessHook(
   record: MeetingRecord,
@@ -15,30 +16,7 @@ export async function slackPostProcessHook(
   }
   console.log(`[hook] Posting to channel ${channelId}`);
 
-  // Format the summary message
-  const actionList = summary.actionItems.length > 0
-    ? summary.actionItems
-        .map((a) => {
-          const name = a.assigneeFullName || a.assignee;
-          const type = a.type ? ` [${a.type}]` : "";
-          return `  • ${a.task}${name ? ` → *${name}*` : ""}${type}`;
-        })
-        .join("\n")
-    : "  _None identified_";
-
-  const decisionList = summary.keyDecisions.length > 0
-    ? summary.keyDecisions.map((d) => `  • ${d}`).join("\n")
-    : "  _None_";
-
-  const text = [
-    `📋 *Meeting Summary: ${record.title}*`,
-    `_${record.date}_\n`,
-    summary.summary,
-    `\n*Key Decisions:*`,
-    decisionList,
-    `\n*Action Items (${summary.actionItems.length}):*`,
-    actionList,
-  ].join("\n");
+  const text = fmtMeetingSummary(record, summary);
 
   // Post summary to channel
   const result = await getSlackApp()!.client.chat.postMessage({

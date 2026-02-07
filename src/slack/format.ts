@@ -21,6 +21,17 @@ const TYPE_SECTIONS: Record<string, string> = {
 
 const TYPE_ORDER = ["bug", "feature", "task", "follow_up"];
 
+/** Format date: "Tue, 7 Feb 15:00" */
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const day = d.toLocaleDateString("en-US", { weekday: "short" });
+  const date = d.getDate();
+  const month = d.toLocaleDateString("en-US", { month: "short" });
+  const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${day}, ${date} ${month} ${time}`;
+}
+
 /** Format the main meeting summary posted to the channel */
 export function fmtMeetingSummary(record: MeetingRecord, summary: MeetingSummary): string {
   const decisionList = summary.keyDecisions.length > 0
@@ -29,7 +40,7 @@ export function fmtMeetingSummary(record: MeetingRecord, summary: MeetingSummary
 
   return [
     `*${record.title}*`,
-    `_${record.date}_`,
+    `_${fmtDate(record.date)}_`,
     "",
     summary.summary,
     "",

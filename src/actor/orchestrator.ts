@@ -1,4 +1,5 @@
 import type { ActionItem, ActionItemPriority } from "../granola/types.js";
+import { characterLine } from "../ai/soul.js";
 import { fmtOrchestratorSummary } from "../slack/format.js";
 import { getHandler } from "./router.js";
 import type { HandlerResult, SlackContext } from "./handlers/types.js";
@@ -62,11 +63,14 @@ export async function orchestrate(
     }
   }
 
-  // Post grouped summary
+  // Post grouped summary with character intro
+  const intro = await characterLine(
+    `All ${items.length} action items from the meeting have been processed. ${succeeded} succeeded, ${failed} failed. Announce the results.`
+  );
   await ctx.client.chat.postMessage({
     channel: ctx.channel,
     thread_ts: ctx.threadTs,
-    text: fmtOrchestratorSummary(results),
+    text: `${intro}\n\n${fmtOrchestratorSummary(results)}`,
   });
 
   return { total: items.length, succeeded, failed, results };

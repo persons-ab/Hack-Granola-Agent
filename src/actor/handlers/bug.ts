@@ -1,4 +1,5 @@
 import { aiJSON } from "../../ai/models.js";
+import { characterLine } from "../../ai/soul.js";
 import type { ActionItem } from "../../granola/types.js";
 import { getProvidersByType } from "../../providers/registry.js";
 import type { CreatedItem } from "../../providers/types.js";
@@ -79,12 +80,13 @@ export const bugHandler: ActionHandler = {
         throw new Error("GitHub not configured");
       }
 
-      // Announce auto-fix attempt
-      const ref = issueItem ? fmtRef(issueItem) : item.task;
+      // Announce auto-fix attempt — ref appended structurally, not by AI
+      const ref = issueItem ? fmtRef(issueItem) : "";
+      const workingMsg = await characterLine(`Starting work on a bug fix: "${item.task}". Announce you're going to fix it and will send a PR when done. Do NOT invent any ticket numbers.`);
       await ctx.client.chat.postMessage({
         channel: ctx.channel,
         thread_ts: ctx.threadTs,
-        text: `I'll work on ${ref} now, will send a PR here when I'm done`,
+        text: ref ? `${workingMsg}\n${ref}` : workingMsg,
       });
 
       const fileList = await getRepoFileList();
@@ -121,10 +123,11 @@ export const bugHandler: ActionHandler = {
         files: fix.files,
       });
 
+      const doneMsg = await characterLine(`The fix PR is done for bug: "${item.task}". Announce the scheme is complete. Do NOT invent any ticket numbers.`);
       await ctx.client.chat.postMessage({
         channel: ctx.channel,
         thread_ts: ctx.threadTs,
-        text: `PR ready for ${ref}: ${fmtRef(prItem)} ${prItem.title}`,
+        text: `${doneMsg}\n${fmtRef(prItem)} ${prItem.title}`,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "unknown error";

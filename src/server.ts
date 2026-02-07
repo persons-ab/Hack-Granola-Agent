@@ -8,8 +8,13 @@ export const app = express();
 
 app.use(express.json());
 
-app.get("/", (_req, res) => {
+app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "meeting-knowledge-system" });
+});
+
+app.get("/", (_req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.send(landingHTML());
 });
 
 app.use("/webhooks", granolaWebhookRouter);
@@ -87,6 +92,588 @@ app.get("/dashboard", (_req, res) => {
   res.setHeader("Content-Type", "text/html");
   res.send(dashboardHTML());
 });
+
+function landingHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dr. Evil — Meeting Intelligence Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090b;
+    --card: #0c0c0f;
+    --border: #1c1c22;
+    --border-hover: #2a2a35;
+    --muted: #71717a;
+    --foreground: #fafafa;
+    --accent: #e11d48;
+    --accent-glow: rgba(225, 29, 72, 0.15);
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --amber: #f59e0b;
+    --purple: #a855f7;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--foreground);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient glow */
+  .glow {
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.07;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-1 { top: -200px; left: -100px; background: var(--accent); }
+  .glow-2 { bottom: -200px; right: -100px; background: var(--purple); }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Nav */
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.1em;
+    letter-spacing: -0.02em;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .nav-links { display: flex; gap: 8px; }
+  .nav-link {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.875em;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .nav-link:hover { color: var(--foreground); background: var(--border); }
+  .nav-link.primary {
+    background: var(--foreground);
+    color: var(--bg);
+  }
+  .nav-link.primary:hover { opacity: 0.9; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 100px 0 80px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.8em;
+    color: var(--muted);
+    margin-bottom: 28px;
+    background: var(--card);
+  }
+  .pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  h1 {
+    font-size: clamp(2.5em, 6vw, 4em);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 20px;
+  }
+  h1 .accent { color: var(--accent); }
+  .subtitle {
+    font-size: 1.15em;
+    color: var(--muted);
+    max-width: 540px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+  }
+  .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 24px var(--accent-glow);
+  }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--card);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--border-hover); }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 80px;
+  }
+  .stat {
+    background: var(--card);
+    padding: 28px;
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 2em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .stat-label {
+    font-size: 0.8em;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Features */
+  .section-label {
+    font-size: 0.75em;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 1.8em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 80px;
+  }
+  .feature {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    transition: border-color 0.15s;
+  }
+  .feature:hover { border-color: var(--border-hover); }
+  .feature-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+  .fi-red { background: rgba(225,29,72,0.1); }
+  .fi-blue { background: rgba(59,130,246,0.1); }
+  .fi-green { background: rgba(34,197,94,0.1); }
+  .fi-amber { background: rgba(245,158,11,0.1); }
+  .fi-purple { background: rgba(168,85,247,0.1); }
+  .feature h3 {
+    font-size: 1em;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .feature p {
+    font-size: 0.875em;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* How it works */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 80px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .flow-step {
+    flex: 1;
+    min-width: 180px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    position: relative;
+    text-align: center;
+  }
+  .flow-step::after {
+    content: '\\2192';
+    position: absolute;
+    right: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 1.2em;
+  }
+  .flow-step:last-child::after { content: none; }
+  .flow-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75em;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .flow-step h4 {
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .flow-step p {
+    font-size: 0.8em;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Tech stack */
+  .tech-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 80px;
+  }
+  .tech-tag {
+    padding: 8px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.8em;
+    font-weight: 500;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .tech-tag:hover { color: var(--foreground); border-color: var(--border-hover); }
+
+  /* CTA */
+  .cta {
+    text-align: center;
+    padding: 64px 0;
+    margin-bottom: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--accent-glow), transparent);
+  }
+  .cta h2 {
+    font-size: 1.6em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .cta p {
+    color: var(--muted);
+    margin-bottom: 28px;
+    font-size: 0.95em;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8em;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* Terminal mockup */
+  .terminal {
+    background: #0c0c0f;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 80px;
+    overflow: hidden;
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+    background: #111114;
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .td-red { background: #ff5f57; }
+  .td-yellow { background: #febc2e; }
+  .td-green { background: #28c840; }
+  .terminal-title {
+    flex: 1;
+    text-align: center;
+    font-size: 0.75em;
+    color: var(--muted);
+  }
+  .terminal-body {
+    padding: 20px 24px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.82em;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+  .t-prompt { color: var(--green); }
+  .t-cmd { color: var(--foreground); }
+  .t-comment { color: #4a4a55; }
+  .t-accent { color: var(--accent); }
+  .t-blue { color: var(--blue); }
+  .t-amber { color: var(--amber); }
+
+  @media (max-width: 640px) {
+    .features { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-step::after { content: '\\2193'; right: auto; bottom: -18px; top: auto; left: 50%; transform: translateX(-50%); }
+    .hero { padding: 60px 0 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+
+<div class="container">
+  <nav>
+    <div class="logo">
+      <div class="logo-icon">&#128520;</div>
+      Dr. Evil
+    </div>
+    <div class="nav-links">
+      <a href="/dashboard" class="nav-link">Dashboard</a>
+      <a href="https://github.com/persons-ab/Hack-Granola-Agent" class="nav-link primary" target="_blank">GitHub</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="pill">
+      <span class="pill-dot"></span>
+      Operational and scheming
+    </div>
+    <h1>Your meetings.<br><span class="accent">Handled.</span></h1>
+    <p class="subtitle">
+      Dr. Evil turns your meetings into action. Auto-summarization, knowledge base, Linear tickets,
+      and a Slack bot with... <em>theatrical precision</em>.
+    </p>
+    <div class="hero-actions">
+      <a href="/dashboard" class="btn btn-primary">Open Dashboard</a>
+      <a href="#how" class="btn btn-secondary">How it works</a>
+    </div>
+  </section>
+
+  <div class="stats" id="stats">
+    <div class="stat">
+      <div class="stat-value" id="stat-meetings">-</div>
+      <div class="stat-label">Meetings processed</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="stat-vectors">-</div>
+      <div class="stat-label">Knowledge entries</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="stat-actions">-</div>
+      <div class="stat-label">Action items tracked</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-label">Capabilities</div>
+    <div class="section-title">Everything after the meeting</div>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon fi-red">&#9889;</div>
+        <h3>Auto-Summarization</h3>
+        <p>Meeting notes from Granola are processed through GPT, extracting key decisions, action items, and discussion points.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon fi-blue">&#128269;</div>
+        <h3>Semantic Search</h3>
+        <p>Vector-powered RAG. Ask questions about past meetings in Slack and get answers with source citations.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon fi-green">&#9989;</div>
+        <h3>Linear Integration</h3>
+        <p>Action items are automatically routed to Linear as tickets. Bugs, features, tasks, follow-ups &mdash; all categorized.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon fi-amber">&#128172;</div>
+        <h3>Slack Bot</h3>
+        <p>@Dr. Evil in Slack to ask questions, summarize threads, or create tickets. In character, naturally.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon fi-purple">&#128101;</div>
+        <h3>Assignee Matching</h3>
+        <p>Fuzzy-matches action item assignees to meeting participants by name, email, or partial match.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon fi-red">&#128204;</div>
+        <h3>Thread Summaries</h3>
+        <p>Summarize any Slack thread into a full meeting record with notes, transcript, and structured action items.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="section-label">Pipeline</div>
+    <div class="section-title">How Dr. Evil operates</div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <h4>Ingest</h4>
+        <p>Meeting notes arrive via Granola webhook, Slack /ingest, or thread summary</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <h4>Summarize</h4>
+        <p>GPT extracts decisions, action items, discussion points, and assignees</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <h4>Store</h4>
+        <p>Embedded into vector DB for semantic search and persisted as full records</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <h4>Act</h4>
+        <p>Linear tickets created, Slack notified, knowledge base updated</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot td-red"></div>
+      <div class="terminal-dot td-yellow"></div>
+      <div class="terminal-dot td-green"></div>
+      <div class="terminal-title">#general &mdash; Slack</div>
+    </div>
+    <div class="terminal-body">
+      <span class="t-comment">// Ask about past meetings</span><br>
+      <span class="t-prompt">@Dr. Evil</span> <span class="t-cmd">what were the key decisions from the sprint planning?</span><br>
+      <span class="t-accent">Dr. Evil</span> <span class="t-cmd">consulted the archives... The key decisions were: 1) Move auth to JWT, 2) Ship v2 API by Friday, 3) Sergey owns the migration. Source: Sprint Planning Jan 30</span><br><br>
+      <span class="t-comment">// Create tickets from conversation</span><br>
+      <span class="t-prompt">@Dr. Evil</span> <span class="t-cmd">create issue: implement rate limiting on /api/search, assign to Alice</span><br>
+      <span class="t-accent">Dr. Evil</span> <span class="t-cmd">It's on our agenda. <span class="t-blue">BIL-142</span> &mdash; you're welcome.</span><br><br>
+      <span class="t-comment">// Summarize a thread</span><br>
+      <span class="t-prompt">@Dr. Evil</span> <span class="t-cmd">summarize this</span><br>
+      <span class="t-accent">Dr. Evil</span> <span class="t-cmd">Our operation is complete. 3 decisions, 5 action items, all filed with <span class="t-amber">surgical precision</span>.</span>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-label">Built with</div>
+    <div class="section-title">Tech Stack</div>
+    <div class="tech-grid">
+      <span class="tech-tag">TypeScript</span>
+      <span class="tech-tag">Node.js</span>
+      <span class="tech-tag">OpenAI GPT-5.2</span>
+      <span class="tech-tag">Vectra</span>
+      <span class="tech-tag">Slack Bolt</span>
+      <span class="tech-tag">Linear SDK</span>
+      <span class="tech-tag">Granola AI</span>
+      <span class="tech-tag">Express</span>
+      <span class="tech-tag">Railway</span>
+      <span class="tech-tag">Zapier</span>
+    </div>
+  </section>
+
+  <div class="cta">
+    <h2>The scheme is live.</h2>
+    <p>Dr. Evil is processing meetings, filing tickets, and answering questions. Right now.</p>
+    <a href="/dashboard" class="btn btn-primary">Open Dashboard</a>
+  </div>
+
+  <footer>
+    Built with theatrical precision for <a href="#">Granola x DeepMind Hackathon 2025</a><br>
+    Powered by Google Gemini
+  </footer>
+</div>
+
+<script>
+(async () => {
+  try {
+    const [mRes, vRes] = await Promise.all([fetch('/meetings'), fetch('/vector')]);
+    const [mData, vData] = await Promise.all([mRes.json(), vRes.json()]);
+    const meetings = mData.data || [];
+    const vectors = vData.data || [];
+    const actions = meetings.reduce((sum, m) => sum + (m.actionItemCount || 0), 0);
+    document.getElementById('stat-meetings').textContent = meetings.length;
+    document.getElementById('stat-vectors').textContent = vectors.length;
+    document.getElementById('stat-actions').textContent = actions;
+  } catch {}
+})();
+</script>
+</body>
+</html>`;
+}
 
 function dashboardHTML(): string {
   return `<!DOCTYPE html>

@@ -4,7 +4,7 @@
 
 An autonomous meeting intelligence agent that ingests meeting notes, builds a searchable knowledge base, creates tickets, and answers questions — all through a Slack bot with personality.
 
-Built in one day for the **Granola x DeepMind Hackathon 2025**.
+Built in one day for the **Granola x DeepMind Hackathon 2026**.
 
 ## What It Does
 

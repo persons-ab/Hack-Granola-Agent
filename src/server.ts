@@ -654,7 +654,7 @@ function landingHTML(): string {
   </div>
 
   <footer>
-    Built with theatrical precision for <a href="#">Granola x DeepMind Hackathon 2025</a><br>
+    Built with theatrical precision for <a href="#">Granola x DeepMind Hackathon 2026</a><br>
     Powered by Google Gemini
   </footer>
 </div>

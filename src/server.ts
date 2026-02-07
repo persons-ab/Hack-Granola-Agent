@@ -529,6 +529,10 @@ function landingHTML(): string {
       <a href="/dashboard" class="btn btn-primary">Open Dashboard</a>
       <a href="#how" class="btn btn-secondary">How it works</a>
     </div>
+
+    <div style="margin-top:48px; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); max-width:720px; margin-left:auto; margin-right:auto;">
+      <iframe width="100%" height="405" src="https://www.youtube.com/embed/ahmX1vS130s" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="display:block;"></iframe>
+    </div>
   </section>
 
   <div class="stats" id="stats">

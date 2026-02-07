@@ -1,8 +1,7 @@
 import type { MeetingRecord, MeetingSummary } from "../granola/types.js";
 import { getSlackApp } from "./app.js";
 import { config } from "../config.js";
-import { executeActionAuto } from "../providers/actionExecutor.js";
-import { getProvidersByType } from "../providers/registry.js";
+import { orchestrate } from "../actor/orchestrator.js";
 
 export async function slackPostProcessHook(
   record: MeetingRecord,
@@ -21,7 +20,8 @@ export async function slackPostProcessHook(
     ? summary.actionItems
         .map((a) => {
           const name = a.assigneeFullName || a.assignee;
-          return `  • ${a.task}${name ? ` → *${name}*` : ""}`;
+          const type = a.type ? ` [${a.type}]` : "";
+          return `  • ${a.task}${name ? ` → *${name}*` : ""}${type}`;
         })
         .join("\n")
     : "  _None identified_";
@@ -50,33 +50,26 @@ export async function slackPostProcessHook(
   const threadTs = result.ts;
   if (!threadTs) return;
 
-  // Auto-create issues for action items with assignees (using whatever provider is configured)
-  if (getProvidersByType("task-manager").length === 0) {
-    console.log("[hook] No task-manager providers configured, skipping issue creation");
+  // Process ALL action items through the actor system
+  if (summary.actionItems.length === 0) {
+    console.log("[hook] No action items to process");
     return;
   }
 
-  const assignedItems = summary.actionItems.filter((a) => a.assignee);
-  console.log(`[hook] ${assignedItems.length} assigned action items to create issues for`);
-  if (assignedItems.length === 0) return;
-
-  for (const item of assignedItems) {
-    try {
-      const resolvedName = item.assigneeFullName || item.assignee;
-      console.log(`[hook] Creating issue: "${item.task}" → ${resolvedName} (${item.assigneeEmail || "no email"})`);
-      await executeActionAuto(
-        `${item.task}, assign to ${resolvedName}`,
-        getSlackApp()!.client,
-        channelId,
-        threadTs
-      );
-    } catch (err) {
-      console.error(`[hook] Failed to create issue for "${item.task}":`, err);
-      await getSlackApp()!.client.chat.postMessage({
-        channel: channelId,
-        thread_ts: threadTs,
-        text: `❌ Failed to create issue: *${item.task}* — ${err instanceof Error ? err.message : "unknown error"}`,
-      });
-    }
+  console.log(`[hook] Orchestrating ${summary.actionItems.length} action items...`);
+  try {
+    const outcome = await orchestrate(summary.actionItems, {
+      client: getSlackApp()!.client,
+      channel: channelId,
+      threadTs,
+    });
+    console.log(`[hook] Orchestration complete: ${outcome.succeeded} succeeded, ${outcome.failed} failed`);
+  } catch (err) {
+    console.error("[hook] Orchestration failed:", err);
+    await getSlackApp()!.client.chat.postMessage({
+      channel: channelId,
+      thread_ts: threadTs,
+      text: `❌ Action item processing failed: ${err instanceof Error ? err.message : "unknown error"}`,
+    });
   }
 }

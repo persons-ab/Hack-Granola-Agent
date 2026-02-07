@@ -2,6 +2,7 @@ export interface CreateItemParams {
   title: string;
   description: string;
   assignee?: string;
+  assigneeEmail?: string;
   type?: "issue" | "pr" | "prd" | "bug" | "task";
   metadata?: Record<string, unknown>;
 }
@@ -35,6 +36,6 @@ export interface ActionProvider {
   /** List available users for assignment */
   listUsers?(): Promise<ProviderUser[]>;
 
-  /** Fuzzy match a user by name */
-  matchUser?(name: string): ProviderUser | null;
+  /** Fuzzy match a user by name, optionally aided by email */
+  matchUser?(name: string, email?: string): ProviderUser | null;
 }

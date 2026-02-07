@@ -20,13 +20,13 @@ export const config = {
     apiKey: required("OPENAI_API_KEY"),
   },
   slack: {
-    botToken: required("SLACK_BOT_TOKEN"),
+    botToken: optional("SLACK_BOT_TOKEN"),
     appToken: optional("SLACK_APP_TOKEN"),
-    signingSecret: required("SLACK_SIGNING_SECRET"),
+    signingSecret: optional("SLACK_SIGNING_SECRET"),
     summaryChannelId: optional("SUMMARY_CHANNEL_ID"),
   },
   linear: {
-    apiKey: required("LINEAR_API_KEY"),
+    apiKey: optional("LINEAR_API_KEY"),
     teamId: optional("LINEAR_TEAM_ID"),
   },
 } as const;

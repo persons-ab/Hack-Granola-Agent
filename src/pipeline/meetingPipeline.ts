@@ -78,7 +78,7 @@ export function registerPostProcessHook(hook: PostProcessHook): void {
 export async function processMeeting(input: MeetingInput): Promise<MeetingRecord> {
   console.log(`[pipeline] Processing: ${input.title}`);
 
-  // 1. Summarize with GPT-4o
+  // 1. Summarize with LLM
   const gptSummary = await summarizeMeeting(input.rawNotes, input.transcript);
   console.log(`[pipeline] Summary: ${gptSummary.summary.slice(0, 100)}...`);
 

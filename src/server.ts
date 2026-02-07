@@ -134,9 +134,9 @@ function dashboardHTML(): string {
 <body>
 <h1>Meeting Knowledge System</h1>
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('meetings')">Meetings</div>
-  <div class="tab" onclick="switchTab('vector')">Vector Store</div>
-  <div class="tab" onclick="switchTab('search')">Semantic Search</div>
+  <div class="tab active" onclick="switchTab(event, 'meetings')">Meetings</div>
+  <div class="tab" onclick="switchTab(event, 'vector')">Vector Store</div>
+  <div class="tab" onclick="switchTab(event, 'search')">Semantic Search</div>
 </div>
 
 <div id="meetings" class="panel active"><div class="loading">Loading meetings...</div></div>
@@ -150,10 +150,10 @@ function dashboardHTML(): string {
 </div>
 
 <script>
-function switchTab(name) {
+function switchTab(evt, name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  event.target.classList.add('active');
+  if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
   document.getElementById(name).classList.add('active');
 }
 

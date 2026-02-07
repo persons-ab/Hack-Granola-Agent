@@ -1,6 +1,6 @@
 import type { ActionItem, ActionItemPriority } from "../granola/types.js";
 import { characterLine } from "../ai/soul.js";
-import { fmtOrchestratorSummary } from "../slack/format.js";
+import { fmtActionPlan } from "../slack/format.js";
 import { getHandler } from "./router.js";
 import type { HandlerResult, SlackContext } from "./handlers/types.js";
 
@@ -35,6 +35,16 @@ export async function orchestrate(
 
   const sorted = sortByPriority(items);
 
+  // Post plan FIRST — before handlers execute
+  const intro = await characterLine(
+    `${items.length} action items from a meeting. Announce you're taking care of them. Do NOT list the items.`
+  );
+  await ctx.client.chat.postMessage({
+    channel: ctx.channel,
+    thread_ts: ctx.threadTs,
+    text: `${intro}\n\n${fmtActionPlan(sorted)}`,
+  });
+
   // Execute all handlers concurrently
   const settled = await Promise.allSettled(
     sorted.map(async (item) => {
@@ -62,16 +72,6 @@ export async function orchestrate(
       console.error("[orchestrator] Handler threw:", outcome.reason);
     }
   }
-
-  // Post grouped summary with character intro
-  const intro = await characterLine(
-    `All ${items.length} action items from the meeting have been processed. ${succeeded} succeeded, ${failed} failed. Announce the results.`
-  );
-  await ctx.client.chat.postMessage({
-    channel: ctx.channel,
-    thread_ts: ctx.threadTs,
-    text: `${intro}\n\n${fmtOrchestratorSummary(results)}`,
-  });
 
   return { total: items.length, succeeded, failed, results };
 }

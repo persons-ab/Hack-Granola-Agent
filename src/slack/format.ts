@@ -49,19 +49,13 @@ export function fmtMeetingSummary(record: MeetingRecord, summary: MeetingSummary
   ].join("\n");
 }
 
-interface ResultEntry {
-  item: ActionItem;
-  result: HandlerResult;
-}
-
-/** Format the orchestrator summary — grouped by type */
-export function fmtOrchestratorSummary(results: ResultEntry[]): string {
-  // Group results by type
-  const groups = new Map<string, ResultEntry[]>();
-  for (const entry of results) {
-    const type = entry.item.type || "task";
+/** Format action items plan — posted BEFORE handlers execute */
+export function fmtActionPlan(items: ActionItem[]): string {
+  const groups = new Map<string, ActionItem[]>();
+  for (const item of items) {
+    const type = item.type || "task";
     if (!groups.has(type)) groups.set(type, []);
-    groups.get(type)!.push(entry);
+    groups.get(type)!.push(item);
   }
 
   const sections: string[] = [];
@@ -71,22 +65,13 @@ export function fmtOrchestratorSummary(results: ResultEntry[]): string {
     if (!entries || entries.length === 0) continue;
 
     const heading = TYPE_SECTIONS[type] || type;
-    const items = entries.map((e) => fmtResultLine(e)).join("\n");
-    sections.push(`*${heading}*\n${items}`);
+    const lines = entries.map((item) => {
+      const assigneeName = item.assigneeFullName || item.assignee;
+      const assignee = assigneeName ? ` → ${fmtAssignee(assigneeName)}` : "";
+      return `• ${item.task}${assignee}`;
+    }).join("\n");
+    sections.push(`*${heading}*\n${lines}`);
   }
 
   return sections.join("\n\n");
-}
-
-function fmtResultLine({ item, result }: ResultEntry): string {
-  const assigneeName = item.assigneeFullName || item.assignee;
-  const assignee = assigneeName ? ` → ${fmtAssignee(assigneeName)}` : "";
-
-  if (result.success && result.item) {
-    return `• ${fmtRef(result.item)} ${item.task}${assignee}`;
-  }
-  if (result.success) {
-    return `• ${item.task}${assignee}`;
-  }
-  return `• ~${item.task}~ — _${result.error || "failed"}_`;
 }

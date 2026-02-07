@@ -132,7 +132,7 @@ export const bugHandler: ActionHandler = {
       await ctx.client.chat.postMessage({
         channel: ctx.channel,
         thread_ts: ctx.threadTs,
-        text: `OPERATION SUCCESS :onemilliondollars:\n${doneMsg}\n${fmtRef(prItem)} ${prItem.title}`,
+        text: `*OPERATION SUCCESS* :onemilliondollars:\n${doneMsg}\n${fmtRef(prItem)} ${prItem.title}`,
       });
       console.log("[bug] PR-done message posted to Slack");
     } catch (err) {

@@ -52,6 +52,30 @@ IMPORTANT:
   );
 }
 
+function shouldAttemptAutoFix(item: ActionItem): boolean {
+  // If the action item is explicitly about reproduction / investigation / documenting,
+  // do NOT attempt an auto-fix PR — create a tracking issue only.
+  const text = `${item.task || ""}\n${item.context || ""}`.toLowerCase();
+
+  const investigationKeywords = [
+    "reproduce",
+    "repro",
+    "investigate",
+    "investigation",
+    "debug",
+    "triage",
+    // RU
+    "воспроиз",
+    "шаги",
+    "описан",
+    "исслед",
+    "разобрат",
+    "диагност",
+  ];
+
+  return !investigationKeywords.some((k) => text.includes(k));
+}
+
 export const bugHandler: ActionHandler = {
   type: "bug",
 
@@ -73,16 +97,23 @@ export const bugHandler: ActionHandler = {
       });
     }
 
-    // Phase B: Best-effort fix PR
+    // Phase B: Best-effort fix PR (only when this is actually a "fix" request)
     let prItem: CreatedItem | undefined;
     try {
+      if (!shouldAttemptAutoFix(item)) {
+        // Tracking/investigation item: no PR attempt.
+        throw new Error("Auto-fix skipped for investigation/repro task");
+      }
+
       if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPO) {
         throw new Error("GitHub not configured");
       }
 
       // Announce auto-fix attempt — ref appended structurally, not by AI
       const ref = issueItem ? fmtRef(issueItem) : "";
-      const workingMsg = await characterLine(`Starting work on a bug fix: "${item.task}". Announce you're going to fix it and will send a PR when done. Do NOT invent any ticket numbers.`);
+      const workingMsg = await characterLine(
+        `Starting work on a bug fix: "${item.task}". Announce you're going to fix it and will send a PR when done. Do NOT invent any ticket numbers.`,
+      );
       await ctx.client.chat.postMessage({
         channel: ctx.channel,
         thread_ts: ctx.threadTs,
@@ -90,7 +121,11 @@ export const bugHandler: ActionHandler = {
       });
 
       const fileList = await getRepoFileList();
-      const relevantPaths = await pickRelevantFiles(fileList, item.task);
+      const fullBugDescription = item.context
+        ? `${item.task}\n\nContext:\n${item.context}`
+        : item.task;
+
+      const relevantPaths = await pickRelevantFiles(fileList, fullBugDescription);
       if (relevantPaths.length === 0) {
         throw new Error("Could not identify relevant files");
       }
@@ -108,12 +143,16 @@ export const bugHandler: ActionHandler = {
         throw new Error("Could not fetch any relevant files");
       }
 
-      const fix = await generateFix(item.task, fileContents);
+      const fix = await generateFix(fullBugDescription, fileContents);
       if (!fix.files || fix.files.length === 0) {
         throw new Error("Could not generate a fix");
       }
 
-      const slug = item.task.slice(0, 40).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "");
+      const slug = item.task
+        .slice(0, 40)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/-$/, "");
       const branchName = `fix/${Date.now()}-${slug}`;
 
       prItem = await createPRViaAPI({
@@ -123,7 +162,9 @@ export const bugHandler: ActionHandler = {
         files: fix.files,
       });
 
-      const doneMsg = await characterLine(`The fix PR is done for bug: "${item.task}". Announce the scheme is complete. Do NOT invent any ticket numbers.`);
+      const doneMsg = await characterLine(
+        `The fix PR is done for bug: "${item.task}". Announce the scheme is complete. Do NOT invent any ticket numbers.`,
+      );
       await ctx.client.chat.postMessage({
         channel: ctx.channel,
         thread_ts: ctx.threadTs,
@@ -131,7 +172,10 @@ export const bugHandler: ActionHandler = {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "unknown error";
-      console.warn(`[bug] Auto-fix PR failed: ${msg}`);
+      // Don't treat intentional skip as a failure worth a loud warning.
+      if (msg !== "Auto-fix skipped for investigation/repro task") {
+        console.warn(`[bug] Auto-fix PR failed: ${msg}`);
+      }
     }
 
     return {

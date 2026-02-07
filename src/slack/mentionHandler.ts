@@ -19,8 +19,15 @@ export function registerMentionHandler(): void {
       // Intent: summarize thread
       if (text.toLowerCase().includes("summarize") && event.thread_ts) {
         tryReact(client, event.channel, event.ts, "brain");
+        console.log(`[slack] Summarizing thread ${event.thread_ts} in ${event.channel}`);
         const summary = await summarizeThread(client, event.channel, event.thread_ts);
-        await say({ text: summary, thread_ts: threadTs });
+        console.log(`[slack] Summary ready (${summary.length} chars), posting reply...`);
+        const result = await client.chat.postMessage({
+          channel: event.channel,
+          thread_ts: threadTs,
+          text: summary,
+        });
+        console.log(`[slack] Reply posted: ${result.ok}, ts: ${result.ts}`);
         return;
       }
 

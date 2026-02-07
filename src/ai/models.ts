@@ -3,7 +3,7 @@ import { config } from "../config.js";
 
 const openai = new OpenAI({ apiKey: config.openai.apiKey });
 
-const MODEL = process.env.OPENAI_MODEL || "gpt-5.2-pro";
+const MODEL = process.env.OPENAI_MODEL || "gpt-5.2";
 
 /**
  * Call the Responses API and return raw text.

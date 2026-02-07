@@ -1,7 +1,7 @@
 import type { WebClient } from "@slack/web-api";
 import OpenAI from "openai";
 import { config } from "../config.js";
-import { getProvider, getProvidersByType, hasProvider } from "./registry.js";
+import { getProvider, getProvidersByType } from "./registry.js";
 import type { CreatedItem, CreateItemParams } from "./types.js";
 
 const openai = new OpenAI({ apiKey: config.openai.apiKey });
@@ -11,6 +11,11 @@ interface ExtractedAction {
   description: string;
   assigneeName: string | null;
   type: CreateItemParams["type"];
+}
+
+interface ResolvedAssignee {
+  name: string;
+  email?: string;
 }
 
 async function extractActionFields(text: string): Promise<ExtractedAction> {
@@ -46,22 +51,30 @@ export interface ExecuteActionResult {
 /**
  * Execute an action using a specific provider.
  * Follows: Pre-announce → Execute → Notify pattern.
+ *
+ * When resolvedAssignee is provided (from pipeline participant matching),
+ * it is used directly for provider user lookup instead of re-extracting from GPT.
  */
 export async function executeAction(
   text: string,
   providerName: string,
   slackClient: WebClient,
   channel: string,
-  threadTs: string
+  threadTs: string,
+  resolvedAssignee?: ResolvedAssignee
 ): Promise<ExecuteActionResult> {
   const provider = getProvider(providerName);
   const extracted = await extractActionFields(text);
 
+  // Use resolved assignee from pipeline when available, fall back to GPT extraction
+  const assigneeName = resolvedAssignee?.name || extracted.assigneeName;
+  const assigneeEmail = resolvedAssignee?.email;
+
   // Resolve assignee if provider supports it
-  const assignee = extracted.assigneeName && provider.matchUser
-    ? provider.matchUser(extracted.assigneeName)
+  const assignee = assigneeName && provider.matchUser
+    ? provider.matchUser(assigneeName, assigneeEmail)
     : null;
-  const assigneeLabel = assignee?.name || extracted.assigneeName || "unassigned";
+  const assigneeLabel = assignee?.name || assigneeName || "unassigned";
 
   // Pre-announce
   await slackClient.chat.postMessage({
@@ -74,7 +87,8 @@ export async function executeAction(
   const item = await provider.createItem({
     title: extracted.title,
     description: extracted.description,
-    assignee: extracted.assigneeName || undefined,
+    assignee: assigneeName || undefined,
+    assigneeEmail: assigneeEmail,
     type: extracted.type,
   });
 
@@ -96,12 +110,13 @@ export async function executeActionAuto(
   text: string,
   slackClient: WebClient,
   channel: string,
-  threadTs: string
+  threadTs: string,
+  resolvedAssignee?: ResolvedAssignee
 ): Promise<ExecuteActionResult | null> {
   const taskManagers = getProvidersByType("task-manager");
   if (taskManagers.length === 0) {
     console.log("[executor] No task-manager providers configured, skipping");
     return null;
   }
-  return executeAction(text, taskManagers[0].name, slackClient, channel, threadTs);
+  return executeAction(text, taskManagers[0].name, slackClient, channel, threadTs, resolvedAssignee);
 }

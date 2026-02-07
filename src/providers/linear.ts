@@ -33,7 +33,9 @@ export class LinearProvider implements ActionProvider {
   async createItem(params: CreateItemParams): Promise<CreatedItem> {
     if (!this.client) throw new Error("Linear not initialized");
 
-    const assignee = params.assignee ? this.matchUser(params.assignee) : null;
+    const assignee = params.assignee
+      ? this.matchUser(params.assignee, params.assigneeEmail)
+      : null;
 
     const result = await this.client.createIssue({
       teamId: config.linear.teamId,
@@ -55,7 +57,17 @@ export class LinearProvider implements ActionProvider {
     return this.users;
   }
 
-  matchUser(name: string): ProviderUser | null {
+  matchUser(name: string, email?: string): ProviderUser | null {
+    if (!name && !email) return null;
+
+    // Exact email match — strongest signal
+    if (email) {
+      const byEmail = this.users.find(
+        (u) => u.email && u.email.toLowerCase() === email.toLowerCase()
+      );
+      if (byEmail) return byEmail;
+    }
+
     if (!name) return null;
     const lower = name.toLowerCase().trim();
 

@@ -19,7 +19,10 @@ export async function slackPostProcessHook(
   // Format the summary message
   const actionList = summary.actionItems.length > 0
     ? summary.actionItems
-        .map((a) => `  • ${a.task}${a.assignee ? ` → *${a.assignee}*` : ""}`)
+        .map((a) => {
+          const name = a.assigneeFullName || a.assignee;
+          return `  • ${a.task}${name ? ` → *${name}*` : ""}`;
+        })
         .join("\n")
     : "  _None identified_";
 
@@ -59,9 +62,10 @@ export async function slackPostProcessHook(
 
   for (const item of assignedItems) {
     try {
-      console.log(`[hook] Creating issue: "${item.task}" → ${item.assignee}`);
+      const resolvedName = item.assigneeFullName || item.assignee;
+      console.log(`[hook] Creating issue: "${item.task}" → ${resolvedName} (${item.assigneeEmail || "no email"})`);
       await executeActionAuto(
-        `${item.task}, assign to ${item.assignee}`,
+        `${item.task}, assign to ${resolvedName}`,
         getSlackApp()!.client,
         channelId,
         threadTs

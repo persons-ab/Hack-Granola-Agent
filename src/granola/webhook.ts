@@ -3,15 +3,33 @@ import { getMeeting, getTranscript } from "./mcpClient.js";
 import { processMeeting } from "../pipeline/meetingPipeline.js";
 import { isProcessed, markProcessed } from "../pipeline/meetingStore.js";
 
+function parseAttendees(raw: string): string[] {
+  // Format: "email: a@b.com\nname: Alice\n\nemail: c@d.com\nname: Bob"
+  // Split by double newline to get each person block
+  const blocks = raw.split(/\n\n+/).filter(Boolean);
+  return blocks.map((block) => {
+    const lines = block.split("\n").map((l) => l.trim());
+    const email = lines.find((l) => l.startsWith("email:"))?.replace("email:", "").trim() || "";
+    const name = lines.find((l) => l.startsWith("name:"))?.replace("name:", "").trim() || "";
+    if (name && email) return `${name} <${email}>`;
+    return name || email;
+  }).filter(Boolean);
+}
+
 export const granolaWebhookRouter = Router();
 
 granolaWebhookRouter.post("/granola", async (req, res) => {
   try {
     console.log("[webhook] === Incoming Zapier payload ===");
-    console.log("[webhook] Headers:", JSON.stringify(req.headers, null, 2));
-    console.log("[webhook] Body:", JSON.stringify(req.body, null, 2));
+    console.log("[webhook] Content-Type:", req.headers["content-type"]);
+    console.log("[webhook] User-Agent:", req.headers["user-agent"]);
+    const body = req.body || {};
+    for (const [key, value] of Object.entries(body)) {
+      const val = typeof value === "string" ? value.slice(0, 500) : JSON.stringify(value).slice(0, 500);
+      console.log(`[webhook] Body.${key}: ${val}`);
+    }
 
-    const { id, title, timestamp, notes, transcript: bodyTranscript } = req.body;
+    const { id, title, timestamp, notes, transcript: bodyTranscript, attendees } = req.body;
 
     if (!id) {
       console.log("[webhook] Rejected: missing id");
@@ -39,12 +57,21 @@ granolaWebhookRouter.post("/granola", async (req, res) => {
       ]);
     }
 
+    // Parse attendees — Granola sends "email: x\nname: Y\n\nemail: z\nname: W" format
+    let participants: string[] = [];
+    if (Array.isArray(attendees)) {
+      participants = attendees.flatMap((a: string) => parseAttendees(a));
+    } else if (typeof attendees === "string" && attendees.trim()) {
+      participants = parseAttendees(attendees);
+    }
+
     await processMeeting({
       id,
       title: title || "Untitled Meeting",
       date: timestamp || new Date().toISOString(),
       rawNotes,
       transcript,
+      participants,
     });
 
     await markProcessed(id);

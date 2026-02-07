@@ -40,4 +40,6 @@ export interface MeetingSummary {
 export interface ActionItem {
   task: string;
   assignee?: string;
+  assigneeFullName?: string;
+  assigneeEmail?: string;
 }

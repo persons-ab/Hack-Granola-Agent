@@ -37,9 +37,15 @@ export interface MeetingSummary {
   discussionPoints: string[];
 }
 
+export type ActionItemType = "task" | "bug" | "feature" | "follow_up";
+export type ActionItemPriority = "high" | "medium" | "low";
+
 export interface ActionItem {
   task: string;
   assignee?: string;
   assigneeFullName?: string;
   assigneeEmail?: string;
+  type?: ActionItemType;
+  priority?: ActionItemPriority;
+  context?: string;
 }

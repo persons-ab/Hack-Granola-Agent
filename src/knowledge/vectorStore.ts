@@ -56,6 +56,7 @@ export async function addDocument(
 }
 
 export interface QueryResult {
+  uri: string;
   text: string;
   score: number;
   metadata: Record<string, any>;
@@ -114,6 +115,7 @@ export async function query(
   for (const r of results) {
     const sections = await r.renderSections(500, 1);
     output.push({
+      uri: r.uri || "",
       text: sections.map((s: any) => s.text).join("\n"),
       score: r.score,
       metadata: {},

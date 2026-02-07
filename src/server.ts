@@ -1,7 +1,7 @@
 import express from "express";
 import { config } from "./config.js";
 import { granolaWebhookRouter } from "./granola/webhook.js";
-import { getMeetingRecord, listAllMeetings } from "./pipeline/meetingStore.js";
+import { getMeetingRecord, listAllMeetings, deleteMeeting } from "./pipeline/meetingStore.js";
 
 export const app = express();
 
@@ -42,6 +42,16 @@ app.get("/meetings/:id", async (req, res) => {
     status: "ok",
     data: record,
   });
+});
+
+// DELETE /meetings/:id — delete a meeting
+app.delete("/meetings/:id", async (req, res) => {
+  const deleted = await deleteMeeting(req.params.id);
+  if (!deleted) {
+    res.status(404).json({ status: "error", message: "Meeting not found" });
+    return;
+  }
+  res.json({ status: "ok", message: "Meeting deleted", id: req.params.id });
 });
 
 export function startServer(): void {

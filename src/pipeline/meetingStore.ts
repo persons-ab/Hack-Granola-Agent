@@ -42,6 +42,18 @@ export async function getMeetingRecord(id: string): Promise<MeetingRecord | null
   }
 }
 
+export async function deleteMeeting(id: string): Promise<boolean> {
+  const filePath = path.join(MEETINGS_DIR, `${id}.json`);
+  try {
+    await fs.unlink(filePath);
+  } catch {
+    return false;
+  }
+  seenIds.delete(id);
+  await fs.writeFile(SEEN_FILE, JSON.stringify([...seenIds]), "utf-8");
+  return true;
+}
+
 export async function listAllMeetings(): Promise<MeetingRecord[]> {
   try {
     const files = await fs.readdir(MEETINGS_DIR);

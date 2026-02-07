@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY tsconfig.json ./
+COPY tsconfig.json SOUL.md ./
 COPY src/ ./src/
 
 RUN mkdir -p data/meetings data/vector-index

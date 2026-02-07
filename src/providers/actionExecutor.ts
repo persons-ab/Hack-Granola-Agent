@@ -15,20 +15,107 @@ interface ResolvedAssignee {
   email?: string;
 }
 
+function createSemaphore(max: number) {
+  let current = 0;
+  const queue: Array<() => void> = [];
+
+  async function acquire(): Promise<() => void> {
+    if (current < max) {
+      current++;
+      return () => {
+        current--;
+        const next = queue.shift();
+        if (next) next();
+      };
+    }
+
+    await new Promise<void>((resolve) => queue.push(resolve));
+    current++;
+    return () => {
+      current--;
+      const next = queue.shift();
+      if (next) next();
+    };
+  }
+
+  return { acquire };
+}
+
+const OPENAI_CONCURRENCY = Math.max(1, parseInt(process.env.OPENAI_CONCURRENCY || "2", 10));
+const openAISemaphore = createSemaphore(OPENAI_CONCURRENCY);
+
+function parseRetryAfterMs(err: unknown): number | null {
+  const anyErr = err as any;
+  const headerVal =
+    anyErr?.headers?.["retry-after"] ??
+    anyErr?.response?.headers?.["retry-after"] ??
+    anyErr?.cause?.headers?.["retry-after"];
+
+  if (headerVal == null) return null;
+  const asNum = typeof headerVal === "string" ? Number(headerVal) : Number(headerVal);
+  if (!Number.isFinite(asNum) || asNum <= 0) return null;
+  // retry-after is seconds
+  return Math.round(asNum * 1000);
+}
+
+function isOpenAIRateLimit(err: unknown): boolean {
+  const anyErr = err as any;
+  const status = anyErr?.status ?? anyErr?.response?.status ?? anyErr?.cause?.status;
+  if (status === 429) return true;
+
+  const msg = String(anyErr?.message || "").toLowerCase();
+  // OpenAI commonly returns 429 with messaging about "quota"/"billing" or "rate limit"
+  return msg.includes("rate limit") || msg.includes("too many requests") || msg.includes("quota") || msg.includes("billing") || msg.includes("429");
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
+async function withRateLimitRetries<T>(fn: () => Promise<T>): Promise<T> {
+  // Keep this conservative: retries help smooth peak-hour bursts without endlessly hammering OpenAI.
+  const maxAttempts = Math.max(1, parseInt(process.env.OPENAI_RETRY_ATTEMPTS || "5", 10));
+  const baseDelayMs = Math.max(50, parseInt(process.env.OPENAI_RETRY_BASE_DELAY_MS || "500", 10));
+
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (!isOpenAIRateLimit(err) || attempt === maxAttempts) break;
+
+      const retryAfterMs = parseRetryAfterMs(err);
+      const backoffMs = retryAfterMs ?? Math.round(baseDelayMs * Math.pow(2, attempt - 1));
+      const jitterMs = Math.round(Math.random() * Math.min(250, backoffMs * 0.2));
+      await sleep(backoffMs + jitterMs);
+    }
+  }
+  throw lastErr;
+}
+
 async function extractActionFields(text: string): Promise<ExtractedAction> {
-  const parsed = await aiJSON<ExtractedAction>(
-    `Extract a work item from the user text. Return JSON:
+  // Limit concurrent OpenAI calls and retry on 429s (often surfaced as "check billing" during peak load).
+  const release = await openAISemaphore.acquire();
+  try {
+    const parsed = await withRateLimitRetries(() =>
+      aiJSON<ExtractedAction>(
+        `Extract a work item from the user text. Return JSON:
 {"title": "short actionable title (start with verb)", "description": "detailed description", "assigneeName": "person name or null", "type": "issue"}
 Type must be one of: "issue", "pr", "prd", "bug", "task".`,
-    text,
-  );
+        text,
+      ),
+    );
 
-  return {
-    title: parsed.title || "Untitled",
-    description: parsed.description || "",
-    assigneeName: parsed.assigneeName || null,
-    type: parsed.type || "issue",
-  };
+    return {
+      title: parsed.title || "Untitled",
+      description: parsed.description || "",
+      assigneeName: parsed.assigneeName || null,
+      type: parsed.type || "issue",
+    };
+  } finally {
+    release();
+  }
 }
 
 export interface ExecuteActionResult {
